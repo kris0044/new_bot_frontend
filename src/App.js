@@ -2,6 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import './App.css';
 
+// ✅ Direct backend base URL
+const API = axios.create({
+  baseURL: "https://new-bot-backend.onrender.com"
+});
+
 function App() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -20,7 +25,7 @@ function App() {
 
   const fetchConversations = async () => {
     try {
-      const res = await axios.get('/api/conversations');
+      const res = await API.get('/api/conversations');
       setConversations(res.data);
     } catch (error) {
       console.error('Error fetching conversations:', error);
@@ -36,12 +41,15 @@ function App() {
     setLoading(true);
 
     try {
-      const res = await axios.post('/api/ask-ai', { prompt: input });
+      const res = await API.post('/api/ask-ai', { prompt: input });
       const aiMessage = { role: 'assistant', content: res.data.response };
       setMessages(prev => [...prev, aiMessage]);
     } catch (error) {
       console.error('Error:', error);
-      const errorMessage = { role: 'assistant', content: `Error: ${error.response?.data?.error || error.message}` };
+      const errorMessage = {
+        role: 'assistant',
+        content: `Error: ${error.response?.data?.error || error.message}`
+      };
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setLoading(false);
@@ -63,7 +71,11 @@ function App() {
     }
 
     try {
-      await axios.post('/api/save', { prompt: userMsg.content, response: aiMsg.content });
+      await API.post('/api/save', {
+        prompt: userMsg.content,
+        response: aiMsg.content
+      });
+
       alert('Conversation saved!');
       fetchConversations();
     } catch (error) {
@@ -82,7 +94,7 @@ function App() {
 
   const handleDeleteConversation = async (id) => {
     try {
-      await axios.delete(`/api/conversations/${id}`);
+      await API.delete(`/api/conversations/${id}`);
       fetchConversations();
     } catch (error) {
       console.error('Error:', error);
@@ -103,15 +115,14 @@ function App() {
 
   return (
     <div className="app-container">
-      {/* Sidebar */}
       <div className={`sidebar ${showSidebar ? 'open' : ''}`}>
         <div className="sidebar-header">
           <h2>Bot</h2>
           <button className="close-btn" onClick={() => setShowSidebar(false)}>✕</button>
         </div>
-        
+
         <button className="new-chat-btn" onClick={handleNewChat}>+ New Chat</button>
-        
+
         <div className="conversations-list">
           <h3>History</h3>
           {conversations.length === 0 ? (
@@ -121,12 +132,13 @@ function App() {
               <div key={conv._id} className="conversation-item">
                 <div className="conv-content" onClick={() => handleLoadConversation(conv)}>
                   <p>{conv.prompt.substring(0, 40)}...</p>
-                  <span className="conv-date">{new Date(conv.timestamp).toLocaleDateString()}</span>
+                  <span className="conv-date">
+                    {new Date(conv.timestamp).toLocaleDateString()}
+                  </span>
                 </div>
                 <button
                   className="delete-btn"
                   onClick={() => handleDeleteConversation(conv._id)}
-                  title="Delete"
                 >
                   🗑️
                 </button>
@@ -136,7 +148,6 @@ function App() {
         </div>
       </div>
 
-      {/* Main Chat Area */}
       <div className="main-content">
         <div className="header">
           <button className="menu-btn" onClick={() => setShowSidebar(!showSidebar)}>☰</button>
@@ -159,6 +170,7 @@ function App() {
               </div>
             ))
           )}
+
           {loading && (
             <div className="message assistant">
               <div className="message-content">
@@ -166,6 +178,7 @@ function App() {
               </div>
             </div>
           )}
+
           <div ref={messagesEndRef} />
         </div>
 
@@ -187,6 +200,7 @@ function App() {
               ➤
             </button>
           </div>
+
           <div className="action-buttons">
             <button onClick={handleSaveConversation} disabled={messages.length < 2}>
               💾 Save
